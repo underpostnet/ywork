@@ -1,0 +1,433 @@
+
+<!--css-->
+
+<style>
+
+  .main {
+
+    position: absolute;
+    transform: translate(-50%, 0);
+    left: 50%;
+    top: 5%;
+    width: 300px;
+
+  }
+
+  .map {
+
+    position: relative;
+    width: 200px;
+    height: 200px;
+    background: red;
+    margin: auto;
+
+  }
+
+  .node {
+
+    position: absolute;
+    width: 20%;
+    height: 20%;
+    border: 2px solid white;
+    cursor: pointer;
+
+  }
+
+  .center {
+
+    position: absolute;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 50%;
+    text-align: center;
+    width: 100%;
+
+  }
+
+  .logo {
+
+    position: relative;
+    top: 10px;
+    width: 60px;
+
+  }
+
+  .t1 {
+
+    position: relative;
+    width: 100%;
+    text-align: center;
+    font-size: 50px;
+
+  }
+
+  .t2 {
+
+    position: relative;
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+
+  }
+
+  .ws-stat, .ss-stat {
+
+    width: 100%;
+    text-align: center;
+    padding: 4px;
+    margin: auto;
+
+  }
+
+  .credit {
+
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    padding: 0px;
+    margin: auto;
+    opacity: 0.8;
+
+  }
+
+  .credit:hover {
+
+    opacity: 1;
+
+  }
+
+  .log {
+
+    width: 100px;
+    text-align: center;
+    padding: 5px;
+    font-weight: bold;
+    background: white;
+    color: black;
+    margin: auto;
+    cursor: pointer;
+    opacity: 0.8;
+    font-size: 14px;
+
+  }
+
+  .log:hover {
+
+    opacity: 1;
+
+  }
+
+  .git {
+
+    position: relative;
+    display: block;
+    width: 100px;
+    filter: invert(100%);
+    margin: auto;
+    top: 5px;
+    opacity: 0.8;
+    cursor: pointer;
+
+  }
+
+  .git:hover {
+
+    opacity: 1;
+
+  }
+
+  a {
+
+    text-decoration: none;
+    color: white;
+
+  }
+
+</style>
+
+<!-- html -->
+
+<div class='main'>
+
+  <div class='t1'> <img class='logo' src='/favicon'> <strong class='t1'>Y</strong>work </div>
+
+  <br>
+
+  <div class='t2'> <strong class='t2'>NodeJS</strong> FrameWork</div>
+
+  <br>
+
+  <div class='map'></div>
+
+  <br>
+
+  <div class='ws-stat'>WebSocket <strong class='ws-stat-s' style='color: red;'></strong></div>
+
+  <div class='ss-stat'>Session <strong class='ss-stat-s' style='color: red;'></strong></div>
+
+  <br>
+
+  <div class='log'></div>
+
+  <br>
+
+  <a target='_blank' href='https://underpost.net/'><div class='credit'>Powered By <strong class='credit'>UNDER</strong>post.net</div></a>
+
+  <a target='_blank' href='https://github.com/underpostnet/ywork'><img class='git' src='/git'></a>
+
+</div>
+
+<!-- ws -->
+
+<script type='text/javascript'>
+
+  (function(){
+
+    loadMap();
+    var id = getID();
+    users.push({ 'state':'new', 'id':id, 'xpos':random(1, 5), 'ypos':random(1, 5) });
+
+    array_map[users[0].xpos][users[0].ypos]++;
+
+    $('.'+users[0].xpos+'-'+users[0].ypos).css('background', 'blue');
+
+    $('.c-'+users[0].xpos+'-'+users[0].ypos).html(array_map[users[0].xpos][users[0].ypos]);
+
+    // Create WebSocket connection.
+
+    runWS(100, false, 'wss://ywork.ddns.net/yworkws');
+
+    // Connection opened
+
+    socket.addEventListener('open', function (event) {
+
+      socket.send(JSON.stringify(users[0]));
+      //test no repeat new user
+      //socket.send(JSON.stringify(users[0]));
+
+    });
+
+    // Listen for messages
+
+    socket.addEventListener('message', function (event) {
+
+      console.log('WebSocket -> '+ event.data);
+
+      if (isJSON(event.data)){
+
+        var wsObj = JSON.parse(event.data);
+
+        console.log('WebSocket -> JSON  | ID:'+wsObj.id);
+
+
+        if(wsObj.state=='del'){
+
+          array_map[wsObj.xpos][wsObj.ypos]--;
+
+          $('.c-'+wsObj.xpos+'-'+wsObj.ypos).html(array_map[wsObj.xpos][wsObj.ypos]);
+
+          for (var i=0; i<users.length; i++) {
+
+            if(users[i].id==wsObj.id){
+
+              users.splice(i, 1);
+
+            }
+
+          }
+
+        }
+
+        if(wsObj.state=='new'){
+
+          var logicGate = true;
+
+          for (var i=0; i<users.length; i++) {
+
+            if(users[i].id==wsObj.id){
+
+              logicGate = false;
+
+            }
+
+          }
+
+          if(logicGate){
+
+            users.push(wsObj);
+
+            array_map[wsObj.xpos][wsObj.ypos]++;
+
+            $('.c-'+wsObj.xpos+'-'+wsObj.ypos).html(array_map[wsObj.xpos][wsObj.ypos]);
+
+            users[0].state = 'new';
+
+            socket.send(JSON.stringify(users[0]));
+
+          }
+
+        }
+
+        if(wsObj.state=='mov' && wsObj.id!=users[0].id){
+
+          for (var i=0; i<users.length; i++) {
+
+            if(users[i].id==wsObj.id){
+
+              movUser(i, wsObj.xpos, wsObj.ypos);
+
+            }
+
+          }
+
+        }
+
+      }
+
+    });
+
+  }());
+
+</script>
+
+<!-- session -->
+
+<script type='text/javascript'>
+
+
+  (function(){
+
+    var log = false;
+
+    $('.log').click(function() {
+
+      if(log){
+
+        $.ajax({
+          url: '/destroy-session',
+          type: 'get', //send it through get method
+          data: {
+            p1: 123,
+            p2: 'Test-LogOut'
+          },
+          success: function(res) {
+
+            log = false;
+
+            $('.ss-stat-s').css('color', 'red');
+            $('.ss-stat-s').html('[OFF]');
+            $('.log').html('LOG IN');
+
+            //Do Something
+            console.log(res);
+
+          },
+          error: function(res) {
+
+            log = true;
+
+            $('.ss-stat-s').css('color', 'green');
+            $('.ss-stat-s').html('[ON]');
+            $('.log').html('LOG OUT');
+
+            //Do Something to handle error
+            console.log(res);
+          }
+        });
+
+      }else{
+
+        $.ajax({
+          url: '/set-session',
+          type: 'get', //send it through get method
+          data: {
+            p1: 123,
+            p2: 'Test-LogIn'
+          },
+          success: function(res) {
+
+            log = true;
+
+            $('.ss-stat-s').css('color', 'green');
+            $('.ss-stat-s').html('[ON]');
+            $('.log').html('LOG OUT');
+
+            //Do Something
+            console.log(res);
+
+          },
+          error: function(res) {
+
+            log = false;
+
+            $('.ss-stat-s').css('color', 'red');
+            $('.ss-stat-s').html('[OFF]');
+            $('.log').html('LOG IN');
+
+            //Do Something to handle error
+            console.log(res);
+          }
+        });
+
+      }
+
+    });
+
+
+
+    $.ajax({
+      url: '/ajax',
+      type: 'get', //send it through get method
+      data: {
+        p1: 123,
+        p2: 'Test-AJAX'
+      },
+      success: function(response) {
+
+        //Do Something
+        var obj = jQuery.parseJSON(response);
+        console.log('AJAX response -> '+obj.p1);
+        console.log('AJAX response -> '+obj.p2);
+
+
+      },
+      error: function(xhr) {
+        //Do Something to handle error
+      }
+    });
+
+    $.ajax({
+      url: '/state',
+      type: 'get', //send it through get method
+      data: {
+        p1: 123,
+        p2: 'Test-State'
+      },
+      success: function(res) {
+
+        log = true;
+
+        $('.ss-stat-s').css('color', 'green');
+        $('.ss-stat-s').html('[ON]');
+        $('.log').html('LOG OUT');
+
+        //Do Something
+        console.log(res);
+
+      },
+      error: function(res) {
+
+        log = false;
+
+        $('.ss-stat-s').css('color', 'red');
+        $('.ss-stat-s').html('[OFF]');
+        $('.log').html('LOG IN');
+
+        //Do Something to handle error
+        console.log(res);
+      }
+    });
+
+  }());
+
+</script>

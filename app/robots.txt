@@ -1,0 +1,5 @@
+User-agent: *
+
+# Disallow: /*.pdf$
+
+Sitemap: https://ywork.ddns.net/sitemap.xml
